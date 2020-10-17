@@ -5,27 +5,26 @@ import scala.collection.mutable
 
 //fill in implementation gaps here making the ImplicitsHomeworkSpec pass!
 object ImplicitsHomework {
-
   /**
-    * Lo and behold! Brand new super-useful collection library for Scala!
-    *
-    * Our main guest today - [[SuperVipCollections4s.MutableBoundedCache]],
-    * a specially crafted, mutable but non-thread-safe (sic!), key-value in-memory cache which bounds the size
-    * of the data stored.
-    *
-    * As the real memory footprint of values on JVM is clouded in mystery, for data size estimation we use
-    * a thing called size score. Its calculation rules:
-    * - size score of a Byte is 1
-    * - Int - 4 (as primitive JVM int consists of 4 bytes)
-    * - Long - 8
-    * - Char - 2 (one UTF-16 symbol is 2 bytes)
-    * - String - 12 (supposedly the size of the JVM object header) + length * size score of Char
-    * - score for any case class is 12 (again our folk wisdom about JVM object layout) + sum of scores of all
-    * the fields
-    * - score for any sequence (Array[T], List[T], Vector[T]) is
-    * 12 (our old friend object header) + sum of scores of all elements
-    * - score for any Map[K, V] is 12 + sum of scores of all keys + sum of scores of all values
-    */
+   * Lo and behold! Brand new super-useful collection library for Scala!
+   *
+   * Our main guest today - [[SuperVipCollections4s.MutableBoundedCache]],
+   * a specially crafted, mutable but non-thread-safe (sic!), key-value in-memory cache which bounds the size
+   * of the data stored.
+   *
+   * As the real memory footprint of values on JVM is clouded in mystery, for data size estimation we use
+   * a thing called size score. Its calculation rules:
+   * - size score of a Byte is 1
+   * - Int - 4 (as primitive JVM int consists of 4 bytes)
+   * - Long - 8
+   * - Char - 2 (one UTF-16 symbol is 2 bytes)
+   * - String - 12 (supposedly the size of the JVM object header) + length * size score of Char
+   * - score for any case class is 12 (again our folk wisdom about JVM object layout) + sum of scores of all
+   * the fields
+   * - score for any sequence (Array[T], List[T], Vector[T]) is
+   * 12 (our old friend object header) + sum of scores of all elements
+   * - score for any Map[K, V] is 12 + sum of scores of all keys + sum of scores of all values
+   */
   object SuperVipCollections4s {
     type SizeScore = Int
 
@@ -35,31 +34,22 @@ object ImplicitsHomework {
 
     object syntax {
       implicit class GetSizeScoreOps[T: GetSizeScore](inner: T) {
-        def sizeScore: SizeScore = {
-          val objectHeaderSize = 12
-          inner match {
-            case _: Byte => 1
-            case _: Int  => 4
-            case _: Long => 8
-            case _: Char => 2
-            // case s: String => objectHeaderSize + s.length * sizeScore(value)
-          }
-        }
+        def sizeScore: SizeScore = implicitly[GetSizeScore[T]].apply(inner)
       }
     }
 
     /**
-      * Mutable key-value cache which limits the size score of the data scored.
-      *
-      * The size score of the data is sum of size scores of all keys + sum of size scores of all values.
-      * If upon insertion the total score gets over [[maxSizeScore]], the oldest KV-pairs
-      * (in the insertion order) should be evicted. If even with the eviction of all the existing elements,
-      * the KV-pair can't be added without violating [[maxSizeScore]] - the behaviour is undefined.
-      *
-      * @param maxSizeScore max size score for the stored data
-      * @tparam K key type
-      * @tparam V value type
-      */
+     * Mutable key-value cache which limits the size score of the data scored.
+     *
+     * The size score of the data is sum of size scores of all keys + sum of size scores of all values.
+     * If upon insertion the total score gets over [[maxSizeScore]], the oldest KV-pairs
+     * (in the insertion order) should be evicted. If even with the eviction of all the existing elements,
+     * the KV-pair can't be added without violating [[maxSizeScore]] - the behaviour is undefined.
+     *
+     * @param maxSizeScore max size score for the stored data
+     * @tparam K key type
+     * @tparam V value type
+     */
     final class MutableBoundedCache[K: GetSizeScore, V: GetSizeScore](maxSizeScore: SizeScore) {
       //with this you can use .sizeScore syntax on keys and values
       import syntax._
@@ -70,11 +60,8 @@ object ImplicitsHomework {
       private val map = mutable.LinkedHashMap.empty[K, V]
 
       def put(key: K, value: V): Unit = {
-
         val itemSizeScore = key.sizeScore + value.sizeScore
-
         def put(key: K, value: V, mapSizeScore: Int): Unit = {
-          //check case when kv sizeScore>maxSizeScore
           if (mapSizeScore + itemSizeScore <= maxSizeScore) map.put(key, value)
           else if (!map.isEmpty) {
             val (oldestKey, oldestValue) = map.iterator.next()
@@ -83,16 +70,16 @@ object ImplicitsHomework {
           }
         }
 
-        put(key, value, map.foldLeft(0)({ case (acc, (k, v)) => k.sizeScore + v.sizeScore }))
+        put(key, value, map.foldLeft(0)({ case (acc, (k, v)) => acc + k.sizeScore + v.sizeScore }))
       }
 
       def get(key: K): Option[V] = map.get(key)
     }
 
     /**
-      * Cool custom immutable multi-map collection - does not extend the standard library collection types
-      * (yes, this is a feature)
-      */
+     * Cool custom immutable multi-map collection - does not extend the standard library collection types
+     * (yes, this is a feature)
+     */
     final case class PackedMultiMap[K, +V](inner: ArraySeq[(K, V)])
     object PackedMultiMap {
       def empty[K, V]: PackedMultiMap[K, V] = PackedMultiMap()
@@ -100,15 +87,14 @@ object ImplicitsHomework {
     }
 
     /**
-      * Type-class allowing us to iterate over different "collection-like" types with one type arg
-      */
+     * Type-class allowing us to iterate over different "collection-like" types with one type arg
+     */
     trait Iterate[-F[_]] {
       def iterator[T](f: F[T]): Iterator[T]
     }
-
     /**
-      * Same as [[Iterate]] but for collections containing 2 types of values (think Map's and like)
-      */
+     * Same as [[Iterate]] but for collections containing 2 types of values (think Map's and like)
+     */
     trait Iterate2[-F[_, _]] {
       def iterator1[T, S](f: F[T, S]): Iterator[T]
       def iterator2[T, S](f: F[T, S]): Iterator[S]
@@ -116,6 +102,13 @@ object ImplicitsHomework {
 
     object instances {
       import syntax._
+      import MyTwitter._
+
+      private val ObjectHeaderSize = 12
+      private val ByteSize = 1
+      private val IntSize = 4
+      private val LongSize = 8
+      private val CharSize = 2
 
       implicit val iterableOnceIterate: Iterate[Iterable] = new Iterate[Iterable] {
         override def iterator[T](f: Iterable[T]): Iterator[T] = f.iterator
@@ -126,6 +119,16 @@ object ImplicitsHomework {
       }
       //Provide Iterate2 instances for Map and PackedMultiMap!
       //if the code doesn't compile while you think it should - sometimes full rebuild helps!
+
+      implicit val mapIterate2: Iterate2[Map] = new Iterate2[Map] {
+        override def iterator1[T, S](f: Map[T, S]): Iterator[T] = f.keysIterator
+        override def iterator2[T, S](f: Map[T, S]): Iterator[S] = f.valuesIterator
+      }
+
+      implicit val packedMultiMapIterate2: Iterate2[PackedMultiMap] = new Iterate2[PackedMultiMap] {
+        override def iterator1[T, S](f: PackedMultiMap[T, S]): Iterator[T] = f.inner.map({ case (k, _) => k }).iterator
+        override def iterator2[T, S](f: PackedMultiMap[T, S]): Iterator[S] = f.inner.map({ case (_, v) => v }).iterator
+      }
 
       /*
       replace this big guy with proper implicit instances for types:
@@ -138,7 +141,24 @@ object ImplicitsHomework {
       If you struggle with writing generic instances for Iterate and Iterate2, start by writing instances for
       List and other collections and then replace those with generic instances.
        */
-      implicit def stubGetSizeScore[T]: GetSizeScore[T] = (_: T) => 42
+
+      implicit val byteSizeScore: GetSizeScore[Byte] = (_: Byte) => ByteSize
+      implicit val intSizeScore: GetSizeScore[Int] = (_: Int) => IntSize
+      implicit val longSizeScore: GetSizeScore[Long] = (_: Long) => LongSize
+      implicit val charSizeScore: GetSizeScore[Char] = (_: Char) => CharSize
+      implicit val stringSizeScore: GetSizeScore[String] = (s: String) => ObjectHeaderSize + s.length * CharSize
+      implicit val twitSizeScore: GetSizeScore[Twit] = (t: Twit) => t.id.sizeScore + t.userId.sizeScore + t.hashTags.sizeScore + t.attributes.sizeScore + t.fbiNotes.sizeScore
+      implicit val fbiNoteSizeScore: GetSizeScore[FbiNote] = (n: FbiNote) => n.month.sizeScore + n.favouriteChar.sizeScore + n.watchedPewDiePieTimes.sizeScore
+      implicit def iterateSizeScore[T: GetSizeScore, I[_]: Iterate]: GetSizeScore[I[T]] = (iter: I[T]) => {
+        val iterate = implicitly[Iterate[I]]
+        iterate.iterator(iter).foldLeft(ObjectHeaderSize)((acc, curr) => acc + curr.sizeScore)
+      }
+      implicit def iterate2SizeScore[T: GetSizeScore, S: GetSizeScore, I2[_, _]: Iterate2]: GetSizeScore[I2[T, S]] = (iter2: I2[T, S]) => {
+        val iterate2 = implicitly[Iterate2[I2]]
+        val keysSizeScore = iterate2.iterator1(iter2).foldLeft(0)((acc, curr) => acc + curr.sizeScore)
+        val valsSizeScore = iterate2.iterator2(iter2).foldLeft(0)((acc, curr) => acc + curr.sizeScore)
+        ObjectHeaderSize + keysSizeScore + valsSizeScore
+      }
     }
   }
 
@@ -148,10 +168,21 @@ object ImplicitsHomework {
    */
   object MyTwitter {
     import SuperVipCollections4s._
+    import instances._
 
-    final case class Twit(id: Long, userId: Int, hashTags: Vector[String], attributes: PackedMultiMap[String, String], fbiNotes: List[FbiNote])
+    final case class Twit(
+      id: Long,
+      userId: Int,
+      hashTags: Vector[String],
+      attributes: PackedMultiMap[String, String],
+      fbiNotes: List[FbiNote],
+    )
 
-    final case class FbiNote(month: String, favouriteChar: Char, watchedPewDiePieTimes: Long)
+    final case class FbiNote(
+      month: String,
+      favouriteChar: Char,
+      watchedPewDiePieTimes: Long,
+    )
 
     trait TwitCache {
       def put(twit: Twit): Unit
@@ -161,6 +192,10 @@ object ImplicitsHomework {
     /*
     Return an implementation based on MutableBoundedCache[Long, Twit]
      */
-    def createTwitCache(maxSizeScore: SizeScore): TwitCache = ???
+    def createTwitCache(maxSizeScore: SizeScore): TwitCache = new TwitCache {
+      private val cache = new MutableBoundedCache[Long, Twit](maxSizeScore)
+      override def put(twit: Twit): Unit = cache.put(twit.id, twit)
+      override def get(id: Long): Option[Twit] = cache.get(id)
+    }
   }
 }

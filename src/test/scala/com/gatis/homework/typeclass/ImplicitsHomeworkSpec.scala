@@ -46,18 +46,22 @@ class ImplicitsHomeworkSpec extends AnyFreeSpec with Matchers {
 
   "Iterate2 instances provided" - {
     "for Map" in {
-      assertCompiles("""import com.gatis.homework.typeclass.ImplicitsHomework.SuperVipCollections4s._
+      assertCompiles(
+        """import com.gatis.homework.typeclass.ImplicitsHomework.SuperVipCollections4s._
           |import com.gatis.homework.typeclass.ImplicitsHomework.SuperVipCollections4s.instances._
           |
           |implicitly[Iterate2[Map]]
-          |""".stripMargin)
+          |""".stripMargin
+      )
     }
     "for PackedMultiMap" in {
-      assertCompiles("""import com.gatis.homework.typeclass.ImplicitsHomework.SuperVipCollections4s._
+      assertCompiles(
+        """import com.gatis.homework.typeclass.ImplicitsHomework.SuperVipCollections4s._
           |import com.gatis.homework.typeclass.ImplicitsHomework.SuperVipCollections4s.instances._
           |
           |implicitly[Iterate2[PackedMultiMap]]
-          |""".stripMargin)
+          |""".stripMargin
+      )
     }
   }
 
@@ -88,23 +92,43 @@ class ImplicitsHomeworkSpec extends AnyFreeSpec with Matchers {
     }
     "List" in {
       List.empty[TestValue].sizeScore shouldEqual 12
-      List(TestValue(1), TestValue(2), TestValue(3)).sizeScore shouldEqual (12 + 1 + 2 + 3)
+      List(
+        TestValue(1),
+        TestValue(2),
+        TestValue(3),
+      ).sizeScore shouldEqual (12 + 1 + 2 + 3)
     }
     "Vector" in {
       Vector.empty[TestValue].sizeScore shouldEqual 12
-      Vector(TestValue(4), TestValue(5), TestValue(6)).sizeScore shouldEqual (12 + 4 + 5 + 6)
+      Vector(
+        TestValue(4),
+        TestValue(5),
+        TestValue(6),
+      ).sizeScore shouldEqual (12 + 4 + 5 + 6)
     }
     "Array" in {
       Array.empty[TestValue].sizeScore shouldEqual 12
-      Array(TestValue(30), TestValue(20), TestValue(10)).sizeScore shouldEqual (12 + 30 + 20 + 10)
+      Array(
+        TestValue(30),
+        TestValue(20),
+        TestValue(10),
+      ).sizeScore shouldEqual (12 + 30 + 20 + 10)
     }
     "Map" in {
       Map.empty[TestValue, TestValue].sizeScore shouldEqual 12
-      Map(TestValue(1) -> TestValue(2), TestValue(3) -> TestValue(4), TestValue(5) -> TestValue(6)).sizeScore shouldEqual (12 + 1.to(6).sum)
+      Map(
+        TestValue(1) -> TestValue(2),
+        TestValue(3) -> TestValue(4),
+        TestValue(5) -> TestValue(6),
+      ).sizeScore shouldEqual (12 + 1.to(6).sum)
     }
     "PackedMultiMap" in {
       PackedMultiMap.empty[TestValue, TestValue].sizeScore shouldEqual 12
-      PackedMultiMap(TestValue(1) -> TestValue(2), TestValue(3) -> TestValue(4), TestValue(5) -> TestValue(6)).sizeScore shouldEqual (12 + 1.to(6).sum)
+      PackedMultiMap(
+        TestValue(1) -> TestValue(2),
+        TestValue(3) -> TestValue(4),
+        TestValue(5) -> TestValue(6),
+      ).sizeScore shouldEqual (12 + 1.to(6).sum)
     }
   }
 
@@ -117,7 +141,7 @@ class ImplicitsHomeworkSpec extends AnyFreeSpec with Matchers {
       userId = 1, //4
       hashTags = Vector.empty, //12
       attributes = PackedMultiMap.empty, //12
-      fbiNotes = Nil //12
+      fbiNotes = Nil, //12
     ) //first entry score: 8 *2 + 4*12 + 4 = 68
 
     val id2 = 2L
@@ -126,13 +150,11 @@ class ImplicitsHomeworkSpec extends AnyFreeSpec with Matchers {
       userId = 2,
       hashTags = Vector("foodie"), //+12 + 6 * 2 for chars = +24
       attributes = PackedMultiMap("hasNoFriends" -> "true"), //2 * 12 + 16 * 2 for chars = +56
-      fbiNotes = List(
-        FbiNote( //+12
-          month = "september", //+ 12 + 9 * 2 = +30
-          favouriteChar = 'E', //+2
-          watchedPewDiePieTimes = 2568L //+8
-        )
-      )
+      fbiNotes = List(FbiNote( //+12
+        month = "september", //+ 12 + 9 * 2 = +30
+        favouriteChar = 'E', //+2
+        watchedPewDiePieTimes = 2568L, //+8
+      ))
     ) //second entry score: 68 + 24 + 56 + 12 + 30 + 2 + 8 = 200
 
     "should limit the size score of data stored" in {
