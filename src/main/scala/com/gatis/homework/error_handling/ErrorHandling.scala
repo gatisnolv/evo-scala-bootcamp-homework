@@ -9,10 +9,10 @@ object ErrorHandling extends App {
 
   object Homework {
 
-    case class CreditCard(name: String, number: String, expirationDate: YearMonth, securityCode: String)
-    object CreditCard {
-      import CreditCardValidator._
-      def of(name: String, number: String, expirationDate: String, securityCode: String): AllErrorsOr[CreditCard] = validate(name, number, expirationDate, securityCode)
+    case class PaymentCard(name: String, number: String, expirationDate: YearMonth, securityCode: String)
+    object PaymentCard {
+      import PaymentCardValidator._
+      def of(name: String, number: String, expirationDate: String, securityCode: String): AllErrorsOr[PaymentCard] = validate(name, number, expirationDate, securityCode)
     }
 
     sealed trait ValidationError
@@ -43,7 +43,7 @@ object ErrorHandling extends App {
       }
     }
 
-    object CreditCardValidator {
+    object PaymentCardValidator {
 
       import ValidationError._
 
@@ -105,8 +105,8 @@ object ErrorHandling extends App {
         validateCodeContents *> validateCodeLength
       }
 
-      def validate(name: String, number: String, expirationDate: String, securityCode: String): AllErrorsOr[CreditCard] =
-        (validateName(name), validateNumber(number), validateExpirationDate(expirationDate), validateSecurityCode(securityCode)).mapN(CreditCard(_, _, _, _))
+      def validate(name: String, number: String, expirationDate: String, securityCode: String): AllErrorsOr[PaymentCard] =
+        (validateName(name), validateNumber(number), validateExpirationDate(expirationDate), validateSecurityCode(securityCode)).mapN(PaymentCard(_, _, _, _))
     }
   }
 }
