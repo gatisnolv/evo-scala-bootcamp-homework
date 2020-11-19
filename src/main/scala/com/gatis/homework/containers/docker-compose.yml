@@ -4,12 +4,12 @@ services:
   # Create docker-compose file, which could be used to run integration tests for this project
   mailcatcher:
     container_name: mailcatcher
-    image: "tophfr/mailcatcher"
+    image: tophfr/mailcatcher
     ports:
       - "80:80"
       - "25:25"
   redis:
     container_name: redis
-    image: "redis"
+    image: redis
     ports:
       - "6379:6379"
