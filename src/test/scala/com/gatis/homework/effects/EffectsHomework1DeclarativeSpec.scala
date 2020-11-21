@@ -1,6 +1,5 @@
 package com.gatis.homework.effects
 
-import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import com.gatis.homework.effects.EffectsHomework1Declarative._
@@ -9,6 +8,45 @@ import scala.util.Failure
 import scala.util.Try
 
 class EffectsHomework1DeclarativeSpec extends AnyFreeSpec with Matchers {
+
+  "map works for long IO chains" in {
+    val n = 50000
+
+    def incr(io: IO[Int], i: Int): IO[Int] =
+      if (i < n)
+        IO.suspend(incr(io.map(_ + 1), i + 1))
+      else io
+
+    incr(IO.pure(0), 0).unsafeRunSync() shouldBe n
+  }
+
+  "flatMap works for long IO chains" in {
+    val n = 50000
+
+    def incr(io: IO[Int]): IO[Int] = {
+      io.flatMap { suspendedInt =>
+        if (suspendedInt == n) IO.pure(suspendedInt)
+        else IO.suspend(incr(IO.delay(suspendedInt + 1)))
+      }
+    }
+
+    incr(IO.pure(0)).unsafeRunSync() shouldBe n
+  }
+
+  "attempt works for long IO chains" in {
+    val n = 50000
+    val exception = new Exception
+
+    def incr(io: IO[Int]): IO[Int] = {
+      io.flatMap { suspendedInt =>
+        if (suspendedInt == n) IO.suspend(IO.raiseError(exception))
+        else IO.suspend(incr(IO.delay(suspendedInt + 1)))
+      }
+    }
+
+    incr(IO.pure(0)).attempt.unsafeRunSync() shouldBe Left(exception)
+  }
+
   "map works for IO" in {
     IO("something").map(_.length).unsafeRunSync() shouldBe 9
   }
@@ -89,9 +127,14 @@ class EffectsHomework1DeclarativeSpec extends AnyFreeSpec with Matchers {
     IO.apply("something").unsafeRunSync() shouldBe "something"
   }
 
-  "suspend suspends an IO into an IO" in {
+  "suspend suspends an exception throwing IO into an IO" in {
     val exception = new Exception
     IO.suspend(IO(throw exception)).attempt.unsafeRunSync() shouldBe Left(exception)
+  }
+
+  "suspend suspends an IO into an IO" in {
+    val exception = new Exception
+    IO.suspend(IO(2)).attempt.unsafeRunSync() shouldBe Right(2)
   }
 
   "delay wraps a value into an IO" in {
