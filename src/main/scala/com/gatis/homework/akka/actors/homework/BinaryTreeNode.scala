@@ -30,6 +30,7 @@ final class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Act
   private def doInsert(m: Insert): Unit = {
     val Insert(requester, id, queryElem) = m
     if (queryElem == elem) {
+      removed = false
       requester ! OperationFinished(id)
     } else {
       val position = if (queryElem > elem) Right else Left
